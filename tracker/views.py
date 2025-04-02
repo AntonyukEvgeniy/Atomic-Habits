@@ -1,21 +1,14 @@
 from rest_framework import generics, permissions
+
+from users.permissions import IsOwnerOrPublic
 from .models import Habit
 from .pagination import HabitPagination
 from .serializers import HabitSerializer
 
 
-class IsOwner(permissions.BasePermission):
-    """
-    Пользовательское разрешение для проверки владельца привычки
-    """
-
-    def has_object_permission(self, request, view, obj):
-        return obj.user == request.user
-
-
 class HabitListCreateView(generics.ListCreateAPIView):
     serializer_class = HabitSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrPublic]
     pagination_class = HabitPagination
     def get_queryset(self):
         """
@@ -26,7 +19,7 @@ class HabitListCreateView(generics.ListCreateAPIView):
 
 class HabitDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = HabitSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwner]
+    permission_classes = [permissions.IsAuthenticated, IsOwnerOrPublic]
 
     def get_queryset(self):
         """
