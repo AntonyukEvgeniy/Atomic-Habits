@@ -1,8 +1,11 @@
 from django.urls import path
 
-
 from .apps import UsersConfig
-from .views import CustomTokenObtainPairView, CustomTokenRefreshView, UserRegistrationView
+from .views import (
+    CustomTokenObtainPairView,
+    CustomTokenRefreshView,
+    UserRegistrationView,
+)
 
 app_name = UsersConfig.name
 

@@ -6,9 +6,11 @@ class User(AbstractUser):
     """
     Кастомная модель пользователя с дополнительными полями
     """
-    username = models.CharField(unique=True,
-        max_length=25, verbose_name="Имя пользователя")
-    email = models.EmailField(unique=True,max_length=25, verbose_name="Email")
+
+    username = models.CharField(
+        unique=True, max_length=25, verbose_name="Имя пользователя"
+    )
+    email = models.EmailField(unique=True, max_length=25, verbose_name="Email")
     phone = models.CharField(
         max_length=35, verbose_name="Телефон", blank=True, null=True
     )
