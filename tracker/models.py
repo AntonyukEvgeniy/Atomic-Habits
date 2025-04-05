@@ -50,6 +50,7 @@ class Habit(models.Model):
 
     execution_time = models.PositiveIntegerField(
         validators=[MaxValueValidator(120)],
+        help_text="Время на выполнение не должно превышать 120 секунд",
         verbose_name="Время на выполнение (в минутах)",
     )
 
