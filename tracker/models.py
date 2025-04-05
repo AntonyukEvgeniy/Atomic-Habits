@@ -1,10 +1,10 @@
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
-from django.db.models.signals import post_save
-from django.dispatch import receiver
+
 
 from users.models import User
+
 
 class Habit(models.Model):
     """
@@ -34,10 +34,14 @@ class Habit(models.Model):
     frequency = models.PositiveIntegerField(
         verbose_name="Периодичность (раз в неделю)",
         validators=[
-            MinValueValidator(1, message="Привычка должна выполняться минимум 1 раз в неделю"),
-            MaxValueValidator(7, message="Привычка не может выполняться реже, чем раз в неделю")
+            MinValueValidator(
+                1, message="Привычка должна выполняться минимум 1 раз в неделю"
+            ),
+            MaxValueValidator(
+                7, message="Привычка не может выполняться реже, чем раз в неделю"
+            ),
         ],
-        default=1
+        default=1,
     )
 
     reward = models.CharField(
@@ -85,16 +89,18 @@ class Habit(models.Model):
 
 
 class Subscription(models.Model):
-    ACTIVE = 'active'
-    DEACTIVATED = 'deactivated'
+    ACTIVE = "active"
+    DEACTIVATED = "deactivated"
     STATUS_CHOICES = [
-        (ACTIVE, 'Уведомления включены'),
-        (DEACTIVATED, 'Уведомления отключены'),
+        (ACTIVE, "Уведомления включены"),
+        (DEACTIVATED, "Уведомления отключены"),
     ]
-    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, related_name='subscriptions')
-    send_time = models.TimeField('Время отправки')
+    habit = models.ForeignKey(
+        Habit, on_delete=models.CASCADE, related_name="subscriptions"
+    )
+    send_time = models.TimeField("Время отправки")
     status = models.CharField(
-        'Статус подписки',
+        "Статус подписки",
         max_length=20,
         choices=STATUS_CHOICES,
         default=ACTIVE,
@@ -105,15 +111,12 @@ class Subscription(models.Model):
         max_length=20,
         verbose_name="Дни недели для отправки",
         help_text="Дни недели в формате 1,2,3,4,5,6,7 (где 1 - понедельник)",
-        default="1,2,3,4,5,6,7"
+        default="1,2,3,4,5,6,7",
     )
+
     class Meta:
-        verbose_name = 'Уведомление'
-        verbose_name_plural = 'Уведомления'
+        verbose_name = "Уведомление"
+        verbose_name_plural = "Уведомления"
 
     def __str__(self):
         return f"Подписка на {self.habit} ({self.status})"
-
-
-
-

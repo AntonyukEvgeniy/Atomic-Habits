@@ -1,6 +1,3 @@
-import eventlet
-eventlet.monkey_patch(os=True, select=True, socket=True, thread=True, time=True)
-# Then import other modules
 import os
 from celery import Celery
 
@@ -18,6 +15,8 @@ app.autodiscover_tasks()
 @app.task(bind=True)
 def debug_task(self):
     print(f"Request: {self.request!r}")
+
+
 # Configure Celery Beat Schedule
 
 

@@ -19,7 +19,7 @@ class Command(BaseCommand):
         try:
             user = User.objects.get(username=username)
             # Привычка 1: Утренняя зарядка
-            habit1 = Habit.objects.create(
+            Habit.objects.create(
                 user=user,
                 location="Дом",
                 time=time(6, 0),  # 6:00 AM
@@ -42,7 +42,7 @@ class Command(BaseCommand):
                 public_indicator=False,
             )
             # Привычка 3: Медитация со связанной приятной привычкой
-            habit3 = Habit.objects.create(
+            Habit.objects.create(
                 user=user,
                 location="Спальня",
                 time=time(22, 0),  # 10:00 PM
@@ -54,7 +54,7 @@ class Command(BaseCommand):
                 public_indicator=True,
             )
             # Привычка 4: Тренировка
-            habit3 = Habit.objects.create(
+            Habit.objects.create(
                 user=user,
                 location="Спортзал",
                 time=time(22, 0),  # 10:00 PM

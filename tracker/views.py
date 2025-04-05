@@ -1,9 +1,12 @@
 from rest_framework import generics, permissions
 from users.permissions import IsOwnerOrPublic
-from .models import Subscription, Habit
+from .models import Habit, Subscription
 from .pagination import HabitPagination
 from .serializers import HabitSerializer
 from .services import create_or_update_notification, days_of_week_to_crontab
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .tasks import trigger_notification
 
 
 class HabitListCreateView(generics.ListCreateAPIView):
@@ -16,13 +19,14 @@ class HabitListCreateView(generics.ListCreateAPIView):
         Возвращает только привычки текущего пользователя
         """
         return Habit.objects.filter(user=self.request.user)
+
     def perform_create(self, serializer):
         habit = serializer.save(user=self.request.user)
         subscription = Subscription.objects.create(
             habit=habit,
             send_time=habit.time,
-            status='active',
-            days_of_week=days_of_week_to_crontab(habit.frequency)
+            status="active",
+            days_of_week=days_of_week_to_crontab(habit.frequency),
         )
         subscription.save()
         create_or_update_notification(subscription)
@@ -48,14 +52,10 @@ class HabitDetailView(generics.RetrieveUpdateDestroyAPIView):
             create_or_update_notification(subscription)
 
 
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from .tasks import trigger_notification
-@api_view(['POST'])
+@api_view(["POST"])
 def trigger_subscription_notification(request, subscription_id):
     """
     Принудительно запускает отправку уведомления для подписки
     """
     task = trigger_notification.delay(subscription_id)
-    return Response({'task_id': task.id})
+    return Response({"task_id": task.id})
