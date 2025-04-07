@@ -32,6 +32,7 @@ class HabitSerializer(serializers.ModelSerializer):
                     "Указанная связанная привычка не существует"
                 )
         return value
+
     @staticmethod
     def validate_execution_time(value):
         if value > 120:
@@ -41,20 +42,23 @@ class HabitSerializer(serializers.ModelSerializer):
         return value
 
     def validate(self, data):
-        reward = data.get('reward')
-        related_habit = data.get('related_habit')
+        reward = data.get("reward")
+        related_habit = data.get("related_habit")
         if reward and related_habit:
             raise serializers.ValidationError(
                 "Нельзя одновременно указывать вознаграждение и связанную привычку"
             )
         # Проверка связанных привычек
-        if data.get('related_habit') and not data['related_habit'].pleasant_habit_indicator:
+        if (
+            data.get("related_habit")
+            and not data["related_habit"].pleasant_habit_indicator
+        ):
             raise serializers.ValidationError(
                 "В связанные привычки можно добавлять только приятные привычки"
             )
         # Проверка приятных привычек
-        if data.get('pleasant_habit_indicator'):
-            if data.get('reward') or data.get('related_habit'):
+        if data.get("pleasant_habit_indicator"):
+            if data.get("reward") or data.get("related_habit"):
                 raise serializers.ValidationError(
                     "У приятной привычки не может быть вознаграждения или связанной привычки"
                 )
