@@ -22,12 +22,15 @@ class HabitListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         habit = serializer.save(user=self.request.user)
-        subscription = Subscription.objects.create(
-            habit=habit,
-            send_time=habit.time,
-            status="active",
-            days_of_week=days_of_week_to_crontab(habit.frequency),
-        )
+        # Проверяем существование подписки перед созданием новой
+        subscription = Subscription.objects.filter(habit=habit).first()
+        if not subscription:
+            subscription = Subscription.objects.create(
+                habit=habit,
+                send_time=habit.time,
+                status="active",
+                days_of_week=days_of_week_to_crontab(habit.frequency),
+            )
         subscription.save()
         create_or_update_notification(subscription)
 
@@ -38,8 +41,10 @@ class HabitDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         """
-        Возвращает только привычки текущего пользователя
+        Возвращает только привычки текущего пользователя или публичные привычки для анонимных пользователей
         """
+        if self.request.user.is_anonymous:
+            return Habit.objects.filter(public_indicator=True)
         return Habit.objects.filter(user=self.request.user)
 
     def perform_update(self, serializer):

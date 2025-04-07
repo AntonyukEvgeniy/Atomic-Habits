@@ -24,8 +24,36 @@ django-celery-beat = "^2.7.0"
 redis = "^5.2.1"
 psycopg2 = "^2.9.10"
 pillow = "^11.1.0"
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+pytest-django = "^4.11.1"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+branch = true
+source = ["."]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]
+ignore_errors = false
+omit = [
+    "*/migrations/*",
+    "*/management/*",
+    "/config/*",
+    "*/apps.py",
+    "manage.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "*/admin.py",
+]
