@@ -1,6 +1,7 @@
 import json
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
+
 def create_or_update_notification(subscription):
     """
     Создает или обновляет периодическую задачу для экземпляра Подписки с поддержкой часового пояса
@@ -28,7 +29,6 @@ def create_or_update_notification(subscription):
             "enabled": subscription.status == "active",
         },
     )
-
 
 
 def days_of_week_to_crontab(frequency):

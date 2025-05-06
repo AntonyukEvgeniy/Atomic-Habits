@@ -15,25 +15,20 @@ User = get_user_model()
 class HabitViewsTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            email='test@example.com'
+            username="testuser", password="testpass123", email="test@example.com"
         )
         self.client.force_authenticate(user=self.user)
 
         self.habit_data = {
-            'location': 'Home',
-            'time': '10:00:00',
-            'action': 'Read a book',
-            'frequency': 3,
-            'execution_time': 30,
-            'public_indicator': True
+            "location": "Home",
+            "time": "10:00:00",
+            "action": "Read a book",
+            "frequency": 3,
+            "execution_time": 30,
+            "public_indicator": True,
         }
 
-        self.habit = Habit.objects.create(
-            user=self.user,
-            **self.habit_data
-        )
+        self.habit = Habit.objects.create(user=self.user, **self.habit_data)
 
     def test_create_habit(self):
         """Тест создания привычки"""
@@ -42,15 +37,15 @@ class HabitViewsTests(APITestCase):
         initial_subscriptions_count = Subscription.objects.count()
 
         self.habit_data_create = {
-            'location': 'Home',
-            'time': '10:00:00',
-            'action': 'Read a book',
-            'frequency': 3,
-            'execution_time': 30,
-            'public_indicator': True
+            "location": "Home",
+            "time": "10:00:00",
+            "action": "Read a book",
+            "frequency": 3,
+            "execution_time": 30,
+            "public_indicator": True,
         }
-        url = reverse('tracker:habit-list-create')
-        response = self.client.post(url, self.habit_data_create, format='json')
+        url = reverse("tracker:habit-list-create")
+        response = self.client.post(url, self.habit_data_create, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         # Проверяем, что создалась только одна новая привычка
         self.assertEqual(Habit.objects.count(), initial_habits_count + 1)
@@ -59,23 +54,23 @@ class HabitViewsTests(APITestCase):
 
     def test_list_habits(self):
         """Тест получения списка привычек"""
-        url = reverse('tracker:habit-list-create')
+        url = reverse("tracker:habit-list-create")
         response = self.client.get(url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data['results']), 1)
+        self.assertEqual(len(response.data["results"]), 1)
 
     def test_update_habit(self):
         """Тест обновления привычки"""
-        url = reverse('tracker:habit-detail', kwargs={'pk': self.habit.pk})
+        url = reverse("tracker:habit-detail", kwargs={"pk": self.habit.pk})
         updated_data = self.habit_data.copy()
-        updated_data['action'] = 'Write code'
+        updated_data["action"] = "Write code"
 
-        response = self.client.put(url, updated_data, format='json')
+        response = self.client.put(url, updated_data, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.habit.refresh_from_db()
-        self.assertEqual(self.habit.action, 'Write code')
+        self.assertEqual(self.habit.action, "Write code")
 
 
 class ServicesTests(TestCase):
@@ -92,8 +87,8 @@ class ServicesTests(TestCase):
             result = days_of_week_to_crontab(frequency)
             self.assertEqual(result, expected)
 
-    @patch('tracker.services.CrontabSchedule')
-    @patch('tracker.services.PeriodicTask')
+    @patch("tracker.services.CrontabSchedule")
+    @patch("tracker.services.PeriodicTask")
     def test_create_or_update_notification(self, mock_periodic_task, mock_crontab):
         """Тест создания/обновления уведомления"""
         mock_schedule = MagicMock()
@@ -111,29 +106,27 @@ class ServicesTests(TestCase):
 
 
 class TasksTests(TestCase):
-    @patch('tracker.tasks.requests.post')
+    @patch("tracker.tasks.requests.post")
     def test_send_telegram_notification(self, mock_post):
         """Тест отправки уведомления в Telegram"""
         user = User.objects.create_user(
-            username='testuser',
-            password='testpass123',
-            email='test@example.com'
+            username="testuser", password="testpass123", email="test@example.com"
         )
 
         habit = Habit.objects.create(
             user=user,
-            location='Home',
-            time='10:00:00',
-            action='Read a book',
+            location="Home",
+            time="10:00:00",
+            action="Read a book",
             frequency=3,
-            execution_time=30
+            execution_time=30,
         )
 
         subscription = Subscription.objects.create(
             habit=habit,
             send_time=timezone.now().time(),
-            status='active',
-            days_of_week='0,1,2'
+            status="active",
+            days_of_week="0,1,2",
         )
 
         mock_response = MagicMock()
@@ -146,5 +139,5 @@ class TasksTests(TestCase):
         mock_post.assert_called_once()
 
         subscription.refresh_from_db()
-        self.assertEqual(subscription.status, 'active')
+        self.assertEqual(subscription.status, "active")
         self.assertEqual(subscription.notification_count, 1)
