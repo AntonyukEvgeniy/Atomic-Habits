@@ -9,8 +9,51 @@ readme = "README.md"
 python = "^3.13"
 django = "^5.1.7"
 django-cors-headers = "^4.7.0"
+djangorestframework = "^3.16.0"
+environs = "^14.1.1"
+black = "^25.1.0"
+flake8 = "^7.2.0"
+isort = "^6.0.1"
+djangorestframework-simplejwt = "^5.5.0"
+coverage = "^7.8.0"
+drf-yasg = "^1.21.10"
+requests = "^2.32.3"
+celery = "^5.5.0"
+eventlet = "^0.39.1"
+django-celery-beat = "^2.7.0"
+redis = "^5.2.1"
+psycopg2 = "^2.9.10"
+pillow = "^11.1.0"
+pytest = "^8.3.5"
+pytest-cov = "^6.1.1"
+pytest-django = "^4.11.1"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.coverage.run]
+branch = true
+source = ["."]
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]
+ignore_errors = false
+omit = [
+    "*/migrations/*",
+    "*/management/*",
+    "/config/*",
+    "*/apps.py",
+    "manage.py",
+    "*/wsgi.py",
+    "*/asgi.py",
+    "*/admin.py",
+]
