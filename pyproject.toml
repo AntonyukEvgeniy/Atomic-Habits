@@ -6,7 +6,7 @@ authors = ["Антонюк Евгений <38914583+AntonyukEvgeniy@users.norepl
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.13"
+python = "^3.12"
 django = "^5.1.7"
 django-cors-headers = "^4.7.0"
 djangorestframework = "^3.16.0"

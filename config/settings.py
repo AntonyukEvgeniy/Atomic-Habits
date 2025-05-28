@@ -42,11 +42,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "corsheaders",
+    "django_celery_beat",
     "rest_framework",
     "tracker",
     "users",
     "drf_yasg",
-    "django_celery_beat",
 ]
 
 MIDDLEWARE = [
@@ -90,10 +90,11 @@ DATABASES = {
         "NAME": env("DATABASE_NAME"),
         "USER": env("DATABASE_USER"),
         "PASSWORD": env("DATABASE_PASSWORD"),
-        "HOST": env("DATABASE_HOST"),
+        "HOST": env("DATABASE_HOST", default="localhost"),
         "PORT": env.int("DATABASE_PORT", default="5432"),
         "OPTIONS": {
             "client_encoding": "UTF8",
+            "connect_timeout": 60,
         },
     }
 }
@@ -174,9 +175,7 @@ CELERY_TIMEZONE = "Europe/Moscow"
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60
 CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND")
-CELERY_BROKER_URL = env.str(
-    "CELERY_BROKER_URL", validate=validate.URL(schemes=["redis"])
-)
+CELERY_BROKER_URL = env.str("CELERY_BROKER_URL", default="redis://redis:6379/0")
 # Celery Beat Settings
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 

@@ -20,6 +20,8 @@ atomic-habits/
 - JWT для аутентификации
 - Swagger для документации API
 - Telegram Bot API для уведомлений
+- Docker
+- Docker Compose
 ## Установка и запуск
 ### Предварительные требования
 - Python 3.13+
@@ -40,7 +42,7 @@ ALLOWED_HOSTS=localhost,127.0.0.1
 DATABASE_NAME=your_db_name
 DATABASE_USER=your_db_user
 DATABASE_PASSWORD=your_db_password
-DATABASE_HOST=localhost
+DATABASE_HOST=db
 DATABASE_PORT=5432
 TELEGRAM_BOT_TOKEN=your_bot_token
 TELEGRAM_CHAT_ID=your_chat_id
@@ -71,6 +73,38 @@ CELERY_RESULT_BACKEND=redis://localhost:6379/0
 ```bash
   python manage.py runserver
 ```
+
+### Работа с Docker
+1. Запустите проект с помощью Docker Compose:
+```bash
+  docker-compose up -d --build
+```
+## Структура Docker-контейнеров
+Проект использует следующие сервисы:
+- **web**: Django приложение
+- **db**: PostgreSQL база данных
+- **redis**: Redis для кэширования и брокера сообщений
+- **celery**: Celery worker для асинхронных задач
+- **celery-beat**: Celery beat для периодических задач
+## Миграции
+Для применения миграций django_celery_beat выполните:
+```bash
+    docker exec -it web-1 python manage.py migrate django_celery_beat
+```
+## Основные команды
+1. Запуск всех сервисов:
+```bash
+    docker-compose up -d
+```
+2. Остановка всех сервисов:
+```bash
+  docker-compose down
+```
+3. Просмотр логов:
+```bash
+  docker-compose logs -f
+```
+
 
 ## API Endpoints
 ### Аутентификация
