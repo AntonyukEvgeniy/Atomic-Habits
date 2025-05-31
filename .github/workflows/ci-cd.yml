@@ -128,9 +128,6 @@ jobs:
 
             cd atomic-habits
 
-            echo "🔐 Записываем .env из секрета..."
-            printf "%s\n" "${{ secrets.ENV_FILE }}" > .env
-
             echo "🧹 Сбрасываем состояние..."
             git reset --hard
             git clean -fd
