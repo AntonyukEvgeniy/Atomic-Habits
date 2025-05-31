@@ -2,22 +2,13 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "35.2-GitHub-Actions" ]
+    branches: ["35.2-GitHub-Actions"]
   pull_request:
-    branches: [ "35.2-GitHub-Actions" ]
+    branches: ["35.2-GitHub-Actions"]
 
 env:
   PYTHON_VERSION: "3.12"
   POETRY_VERSION: "1.7.1"
-  SECRET_KEY: test_key
-  DEBUG: "True"
-  DATABASE_NAME: test_db
-  DATABASE_USER: test_user
-  DATABASE_PASSWORD: test_password
-  DATABASE_HOST: localhost
-  DATABASE_PORT: 5432
-  CELERY_BROKER_URL: redis://localhost:6379/0
-  CELERY_RESULT_BACKEND: redis://localhost:6379/0
 
 jobs:
   test:
@@ -26,9 +17,9 @@ jobs:
       postgres:
         image: postgres:16.8
         env:
-          POSTGRES_DB: ${{ env.DATABASE_NAME }}
-          POSTGRES_USER: ${{ env.DATABASE_USER }}
-          POSTGRES_PASSWORD: ${{ env.DATABASE_PASSWORD }}
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
         ports:
           - 5432:5432
         options: >-
@@ -50,7 +41,8 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
 
       - name: Install Poetry
-        run: curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
+        run: |
+          curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
 
       - name: Configure Poetry
         run: poetry config virtualenvs.create false
@@ -58,13 +50,33 @@ jobs:
       - name: Install Dependencies
         run: poetry install
 
-      - name: Make and Apply Migrations
+      - name: Apply Migrations
+        env:
+          SECRET_KEY: test_key
+          DEBUG: "True"
+          DATABASE_NAME: test_db
+          DATABASE_USER: test_user
+          DATABASE_PASSWORD: test_password
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          CELERY_RESULT_BACKEND: redis://localhost:6379/0
         run: |
-          python manage.py makemigrations --check --dry-run
           python manage.py migrate
 
       - name: Run Tests
-        run: pytest
+        env:
+          SECRET_KEY: test_key
+          DEBUG: "True"
+          DATABASE_NAME: test_db
+          DATABASE_USER: test_user
+          DATABASE_PASSWORD: test_password
+          DATABASE_HOST: localhost
+          DATABASE_PORT: 5432
+          CELERY_BROKER_URL: redis://localhost:6379/0
+          CELERY_RESULT_BACKEND: redis://localhost:6379/0
+        run: |
+          pytest
 
       - name: Code Quality Checks
         run: |
@@ -106,19 +118,18 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd /home/${{ secrets.SERVER_USERNAME }}/atomic-habits
+            cd /home/${{ secrets.SERVER_USERNAME }}
 
-            # Если директория уже git-репозиторий — просто обновим
-            if [ -d .git ]; then
-              git reset --hard
-              git clean -fd
-              git pull origin 35.2-GitHub-Actions
-            else
-              echo "❌ Папка существует, но не является git-репозиторием."
-              exit 1
+            if [ -d "atomic-habits" ]; then
+              echo "🔁 Удаляем старую директорию..."
+              rm -rf atomic-habits
             fi
 
+            echo "📦 Клонируем репозиторий..."
+            git clone -b 35.2-GitHub-Actions https://github.com/${{ github.repository }}.git atomic-habits
+            cd atomic-habits
+
+            echo "🐳 Запускаем docker-compose..."
             docker compose pull
             docker compose down
             docker compose up -d --build
-      
