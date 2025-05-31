@@ -1,12 +1,24 @@
 name: CI/CD Pipeline
+
 on:
   push:
-    branches: [ "35.2-GitHub-Actions"]
+    branches: [ "35.2-GitHub-Actions" ]
   pull_request:
     branches: [ "35.2-GitHub-Actions" ]
+
 env:
   PYTHON_VERSION: "3.12"
   POETRY_VERSION: "1.7.1"
+  SECRET_KEY: test_key
+  DEBUG: "True"
+  DATABASE_NAME: test_db
+  DATABASE_USER: test_user
+  DATABASE_PASSWORD: test_password
+  DATABASE_HOST: localhost
+  DATABASE_PORT: 5432
+  CELERY_BROKER_URL: redis://localhost:6379/0
+  CELERY_RESULT_BACKEND: redis://localhost:6379/0
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -14,9 +26,9 @@ jobs:
       postgres:
         image: postgres:16.8
         env:
-          POSTGRES_DB: test_db
-          POSTGRES_USER: test_user
-          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: ${{ env.DATABASE_NAME }}
+          POSTGRES_USER: ${{ env.DATABASE_USER }}
+          POSTGRES_PASSWORD: ${{ env.DATABASE_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
@@ -28,6 +40,7 @@ jobs:
         image: redis:6
         ports:
           - 6379:6379
+
     steps:
     - uses: actions/checkout@v4
 
@@ -41,31 +54,27 @@ jobs:
         curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
 
     - name: Configure Poetry
-      run: |
-        poetry config virtualenvs.create false
+      run: poetry config virtualenvs.create false
 
     - name: Install Dependencies
       run: poetry install
 
-    - name: Run Tests
-      env:
-        SECRET_KEY: test_key
-        DEBUG: "True"
-        DATABASE_NAME: test_db
-        DATABASE_USER: test_user
-        DATABASE_PASSWORD: test_password
-        DATABASE_HOST: localhost
-        DATABASE_PORT: 5432
-        CELERY_BROKER_URL: redis://localhost:6379/0
-        CELERY_RESULT_BACKEND: redis://localhost:6379/0
+    - name: Check Pending Migrations
       run: |
-        pytest
+        python manage.py makemigrations --check --dry-run
+
+    - name: Apply Migrations
+      run: python manage.py migrate
+
+    - name: Run Tests
+      run: pytest
 
     - name: Code Quality Checks
       run: |
         poetry run black . --check
         poetry run flake8 .
         poetry run isort . --check-only
+
   build:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/35.2-GitHub-Actions'
@@ -85,6 +94,7 @@ jobs:
         tags: atomic-habits:latest
         cache-from: type=gha
         cache-to: type=gha,mode=max
+
   deploy:
     needs: build
     if: github.ref == 'refs/heads/35.2-GitHub-Actions'
