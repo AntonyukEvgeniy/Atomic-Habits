@@ -167,7 +167,7 @@ AUTH_USER_MODEL = "users.User"
 
 # Telegram Configuration
 TELEGRAM_BOT_TOKEN = env.str("TELEGRAM_BOT_TOKEN", default="")
-TELEGRAM_CHAT_ID = env("TELEGRAM_CHAT_ID")
+TELEGRAM_CHAT_ID = env.str("TELEGRAM_CHAT_ID", default="")
 
 
 # Celery Configuration Options
