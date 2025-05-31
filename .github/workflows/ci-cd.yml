@@ -13,6 +13,7 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     services:
       postgres:
         image: postgres:16.8
@@ -27,82 +28,82 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
       redis:
         image: redis:6
         ports:
           - 6379:6379
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
 
-      - name: Install Poetry
-        run: |
-          curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
 
-      - name: Configure Poetry
-        run: poetry config virtualenvs.create false
+    - name: Configure Poetry
+      run: poetry config virtualenvs.create false
 
-      - name: Install Dependencies
-        run: poetry install
+    - name: Install dependencies
+      run: poetry install
 
-      - name: Apply Migrations
-        env:
-          SECRET_KEY: test_key
-          DEBUG: "True"
-          DATABASE_NAME: test_db
-          DATABASE_USER: test_user
-          DATABASE_PASSWORD: test_password
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          CELERY_BROKER_URL: redis://localhost:6379/0
-          CELERY_RESULT_BACKEND: redis://localhost:6379/0
-        run: |
-          python manage.py migrate
+    - name: Run Migrations
+      env:
+        DATABASE_NAME: test_db
+        DATABASE_USER: test_user
+        DATABASE_PASSWORD: test_password
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        SECRET_KEY: test_key
+        DEBUG: "True"
+        CELERY_BROKER_URL: redis://localhost:6379/0
+        CELERY_RESULT_BACKEND: redis://localhost:6379/0
+      run: |
+        python manage.py migrate
 
-      - name: Run Tests
-        env:
-          SECRET_KEY: test_key
-          DEBUG: "True"
-          DATABASE_NAME: test_db
-          DATABASE_USER: test_user
-          DATABASE_PASSWORD: test_password
-          DATABASE_HOST: localhost
-          DATABASE_PORT: 5432
-          CELERY_BROKER_URL: redis://localhost:6379/0
-          CELERY_RESULT_BACKEND: redis://localhost:6379/0
-        run: |
-          pytest
+    - name: Run tests
+      env:
+        DATABASE_NAME: test_db
+        DATABASE_USER: test_user
+        DATABASE_PASSWORD: test_password
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        SECRET_KEY: test_key
+        DEBUG: "True"
+        CELERY_BROKER_URL: redis://localhost:6379/0
+        CELERY_RESULT_BACKEND: redis://localhost:6379/0
+      run: |
+        pytest
 
-      - name: Code Quality Checks
-        run: |
-          poetry run black . --check
-          poetry run flake8 .
-          poetry run isort . --check-only
+    - name: Code Style Checks
+      run: |
+        poetry run black . --check
+        poetry run isort . --check-only
+        poetry run flake8 .
 
   build:
     needs: test
     if: github.event_name == 'push' && github.ref == 'refs/heads/35.2-GitHub-Actions'
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-      - name: Build Docker Image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: false
-          tags: atomic-habits:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: atomic-habits:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
 
   deploy:
     needs: build
@@ -110,29 +111,35 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@master
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            set -e
-            cd /home/${{ secrets.SERVER_USERNAME }}
+    - name: Deploy via SSH
+      uses: appleboy/ssh-action@master
+      with:
+        host: ${{ secrets.SERVER_HOST }}
+        username: ${{ secrets.SERVER_USERNAME }}
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        script: |
+          set -e
 
+          cd /home/${{ secrets.SERVER_USERNAME }}
+
+          if [ ! -d atomic-habits ]; then
             echo "📦 Клонируем репозиторий..."
-            if [ -d "atomic-habits" ]; then
-              rm -rf atomic-habits
-            fi
             git clone -b 35.2-GitHub-Actions https://github.com/${{ github.repository }}.git atomic-habits
+          fi
 
-            cd atomic-habits
+          cd atomic-habits
 
-            echo "🔐 Записываем .env из секрета..."
-            echo "${{ secrets.ENV_FILE }}" > .env
+          echo "🔐 Записываем .env из секрета..."
+          cat <<EOF > .env
+${{ secrets.ENV_FILE }}
+EOF
 
-            echo "🐳 Запускаем docker-compose..."
-            docker compose pull
-            docker compose down
-            docker compose up -d --build
-      
+          echo "🧹 Сбрасываем состояние..."
+          git reset --hard
+          git clean -fd
+          git pull origin 35.2-GitHub-Actions
+
+          echo "🐳 Запускаем docker-compose..."
+          docker compose pull
+          docker compose down
+          docker compose up -d --build
