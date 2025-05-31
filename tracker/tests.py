@@ -1,12 +1,14 @@
+from unittest.mock import MagicMock, patch
+
+from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
-from django.contrib.auth import get_user_model
 from django.utils import timezone
-from rest_framework.test import APITestCase
 from rest_framework import status
-from unittest.mock import patch, MagicMock
+from rest_framework.test import APITestCase
+
 from .models import Habit, Subscription
-from .services import days_of_week_to_crontab, create_or_update_notification
+from .services import create_or_update_notification, days_of_week_to_crontab
 from .tasks import send_telegram_notification
 
 User = get_user_model()
