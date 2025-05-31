@@ -42,38 +42,35 @@ jobs:
           - 6379:6379
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
 
-    - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
+      - name: Install Poetry
+        run: curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
 
-    - name: Configure Poetry
-      run: poetry config virtualenvs.create false
+      - name: Configure Poetry
+        run: poetry config virtualenvs.create false
 
-    - name: Install Dependencies
-      run: poetry install
+      - name: Install Dependencies
+        run: poetry install
 
-    - name: Check Pending Migrations
-      run: |
-        python manage.py makemigrations --check --dry-run
+      - name: Make and Apply Migrations
+        run: |
+          python manage.py makemigrations --check --dry-run
+          python manage.py migrate
 
-    - name: Apply Migrations
-      run: python manage.py migrate
+      - name: Run Tests
+        run: pytest
 
-    - name: Run Tests
-      run: pytest
-
-    - name: Code Quality Checks
-      run: |
-        poetry run black . --check
-        poetry run flake8 .
-        poetry run isort . --check-only
+      - name: Code Quality Checks
+        run: |
+          poetry run black . --check
+          poetry run flake8 .
+          poetry run isort . --check-only
 
   build:
     needs: test
@@ -81,39 +78,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
 
-    - name: Build Docker Image
-      uses: docker/build-push-action@v5
-      with:
-        context: .
-        push: false
-        tags: atomic-habits:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+      - name: Build Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: atomic-habits:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
-    - name: Deploy via SSH
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SERVER_HOST }}
-        username: ${{ secrets.SERVER_USERNAME }}
-        key: ${{ secrets.SSH_PRIVATE_KEY }}
-        script: |
-          set -e
-          cd /home/eugene
-          
-          if [ ! -d "atomic-habits/.git" ]; then
-            git clone https://github.com/YOUR_USERNAME/Atomic-Habits.git atomic-habits
-          else
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/35.2-GitHub-Actions'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/${{ secrets.SERVER_USERNAME }}
+
+            if [ ! -d "atomic-habits/.git" ]; then
+              git clone https://github.com/YOUR_USERNAME/Atomic-Habits.git atomic-habits
+            else
+              cd atomic-habits
+              git pull origin 35.2-GitHub-Actions
+            fi
+
             cd atomic-habits
-            git pull origin 35.2-GitHub-Actions
-          fi
-          
-          cd atomic-habits
-          docker compose pull
-          docker compose down
-          docker compose up -d --build
-  
+            docker compose pull
+            docker compose down
+            docker compose up -d --build
