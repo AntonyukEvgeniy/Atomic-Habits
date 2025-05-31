@@ -120,23 +120,24 @@ jobs:
           script: |
             set -e
             cd /home/${{ secrets.SERVER_USERNAME }}
-            
+
             if [ ! -d atomic-habits ]; then
               echo "📦 Клонируем репозиторий..."
               git clone -b 35.2-GitHub-Actions https://github.com/${{ github.repository }}.git atomic-habits
             fi
-            
+
             cd atomic-habits
-            
+
             echo "🔐 Записываем .env из секрета..."
-            echo "${{ secrets.ENV_FILE }}" > .env
-            
+            printf "%s\n" "${{ secrets.ENV_FILE }}" > .env
+
             echo "🧹 Сбрасываем состояние..."
             git reset --hard
             git clean -fd
             git pull origin 35.2-GitHub-Actions
-            
+
             echo "🐳 Запускаем docker-compose..."
             docker compose pull
             docker compose down
             docker compose up -d --build
+      
