@@ -90,7 +90,7 @@ DATABASES = {
         "NAME": env("DATABASE_NAME"),
         "USER": env("DATABASE_USER"),
         "PASSWORD": env("DATABASE_PASSWORD"),
-        "HOST": env("DATABASE_HOST", default="localhost"),
+        "HOST": env("DATABASE_HOST", default="db"),
         "PORT": env.int("DATABASE_PORT", default="5432"),
         "OPTIONS": {
             "client_encoding": "UTF8",
