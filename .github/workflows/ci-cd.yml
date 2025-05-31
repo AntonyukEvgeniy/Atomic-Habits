@@ -106,16 +106,19 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
             set -e
-            cd /home/${{ secrets.SERVER_USERNAME }}
+            cd /home/${{ secrets.SERVER_USERNAME }}/atomic-habits
 
-            if [ ! -d "atomic-habits/.git" ]; then
-              git clone https://github.com/YOUR_USERNAME/Atomic-Habits.git atomic-habits
-            else
-              cd atomic-habits
+            # Если директория уже git-репозиторий — просто обновим
+            if [ -d .git ]; then
+              git reset --hard
+              git clean -fd
               git pull origin 35.2-GitHub-Actions
+            else
+              echo "❌ Папка существует, но не является git-репозиторием."
+              exit 1
             fi
 
-            cd atomic-habits
             docker compose pull
             docker compose down
             docker compose up -d --build
+      
