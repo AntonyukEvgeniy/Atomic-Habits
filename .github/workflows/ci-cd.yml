@@ -1,0 +1,140 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: ["35.2-GitHub-Actions"]
+  pull_request:
+    branches: ["35.2-GitHub-Actions"]
+
+env:
+  PYTHON_VERSION: "3.12"
+  POETRY_VERSION: "1.7.1"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16.8
+        env:
+          POSTGRES_DB: test_db
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:6
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 - --version ${{ env.POETRY_VERSION }}
+
+    - name: Configure Poetry
+      run: poetry config virtualenvs.create false
+
+    - name: Install dependencies
+      run: poetry install
+
+    - name: Run Migrations
+      env:
+        DATABASE_NAME: test_db
+        DATABASE_USER: test_user
+        DATABASE_PASSWORD: test_password
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        SECRET_KEY: test_key
+        DEBUG: "True"
+        CELERY_BROKER_URL: redis://localhost:6379/0
+        CELERY_RESULT_BACKEND: redis://localhost:6379/0
+      run: |
+        python manage.py migrate
+
+    - name: Run tests
+      env:
+        DATABASE_NAME: test_db
+        DATABASE_USER: test_user
+        DATABASE_PASSWORD: test_password
+        DATABASE_HOST: localhost
+        DATABASE_PORT: 5432
+        SECRET_KEY: test_key
+        DEBUG: "True"
+        CELERY_BROKER_URL: redis://localhost:6379/0
+        CELERY_RESULT_BACKEND: redis://localhost:6379/0
+      run: |
+        pytest
+
+    - name: Code Style Checks
+      run: |
+        poetry run black . --check
+        poetry run isort . --check-only
+        poetry run flake8 .
+
+  build:
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/35.2-GitHub-Actions'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        tags: atomic-habits:latest
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build
+    if: github.ref == 'refs/heads/35.2-GitHub-Actions'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /home/${{ secrets.SERVER_USERNAME }}
+
+            if [ ! -d atomic-habits ]; then
+              echo "📦 Клонируем репозиторий..."
+              git clone -b 35.2-GitHub-Actions https://github.com/${{ github.repository }}.git atomic-habits
+            fi
+
+            cd atomic-habits
+
+            echo "🧹 Сбрасываем состояние..."
+            git reset --hard
+            git clean -fd
+            git pull origin 35.2-GitHub-Actions
+
+            echo "🐳 Запускаем docker-compose..."
+            docker compose pull
+            docker compose down
+            docker compose up -d --build
+      

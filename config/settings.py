@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -90,7 +91,7 @@ DATABASES = {
         "NAME": env("DATABASE_NAME"),
         "USER": env("DATABASE_USER"),
         "PASSWORD": env("DATABASE_PASSWORD"),
-        "HOST": env("DATABASE_HOST", default="localhost"),
+        "HOST": env("DATABASE_HOST", default="db"),
         "PORT": env.int("DATABASE_PORT", default="5432"),
         "OPTIONS": {
             "client_encoding": "UTF8",
@@ -134,7 +135,7 @@ USE_DEPRECATED_PYTZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -166,8 +167,8 @@ AUTH_USER_MODEL = "users.User"
 
 
 # Telegram Configuration
-TELEGRAM_BOT_TOKEN = env("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = env("TELEGRAM_CHAT_ID")
+TELEGRAM_BOT_TOKEN = env.str("TELEGRAM_BOT_TOKEN", default="")
+TELEGRAM_CHAT_ID = env.str("TELEGRAM_CHAT_ID", default="")
 
 
 # Celery Configuration Options
@@ -185,3 +186,8 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 DJANGO_CELERY_BEAT_TZ_AWARE = True
 CELERY_ENABLE_UTC = False
+
+
+STATIC_ROOT = os.path.join(BASE_DIR, "static")
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
