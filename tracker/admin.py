@@ -1,4 +1,5 @@
 from django.contrib import admin
+
 from .models import Subscription
 from .tasks import trigger_notification
 

@@ -1,4 +1,5 @@
 import json
+
 from django_celery_beat.models import CrontabSchedule, PeriodicTask
 
 
